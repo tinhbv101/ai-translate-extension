@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "AI Translate Side Panel",
+  "description": "Side panel translator using Google Gemini. Paste text, pick languages, translate.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "AI Translate"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "options_page": "options/options.html",
+  "background": {
+    "service_worker": "service_worker.js"
+  },
+  "permissions": [
+    "storage",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "icons": {
+    "16": "icons/4150650.png",
+    "48": "icons/4150650.png",
+    "128": "icons/4150650.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com"
+  }
+}

@@ -1,0 +1,156 @@
+:root {
+  --bg: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #6d28d9;
+  --primary-hover: #5b21b6;
+  --border: #e5e7eb;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.prefs {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.lang-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 8px 16px;
+}
+
+.lang-select {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.swap-btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.input-row {
+  padding: 0 16px;
+}
+
+.output-row {
+  padding: 0 16px;
+}
+
+.input-textbox {
+  width: 100%;
+  min-height: 160px;
+  resize: none;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.output-textbox {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  line-height: 1.5;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary:hover { background: var(--primary-hover); }
+
+.status { font-size: 12px; color: var(--muted); }
+
+.footer {
+  padding: 8px 16px 16px 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.textbox {
+  width: 100%;
+  min-height: 160px;
+  resize: none;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+/* Output grows with content up to a cap; JS adjusts height */
+.output-text {
+  max-height: 70vh;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Rendered Markdown output */
+.output-html {
+  max-height: 70vh;
+  overflow: auto;
+  padding: 12px;
+  background: #fff;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.output-html h1,
+.output-html h2,
+.output-html h3 { margin: 1em 0 .5em 0; }
+.output-html p { margin: .5em 0; }
+.output-html ul,
+.output-html ol { padding-left: 1.25rem; }
+.output-html code { background: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
+.output-html pre { background: #0b1021; color: #e5e7eb; padding: 12px; border-radius: 8px; overflow: auto; }
+.output-html a { color: var(--primary); text-decoration: none; }
+.output-html blockquote { border-left: 3px solid var(--border); margin: .5em 0; padding-left: .75em; color: var(--muted); }
+
+/* Model selector */
+.model-row {
+  padding: 0 16px 8px 16px;
+}
+.model-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-sizing: border-box;
+}

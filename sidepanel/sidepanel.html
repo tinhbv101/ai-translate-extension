@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Translate</title>
+    <link rel="stylesheet" href="sidepanel.css">
+  </head>
+  <body>
+    <header class="header">
+      <div class="title">Translate</div>
+      <a class="prefs" href="../options/options.html" target="_blank" title="Preferences">Preferences</a>
+    </header>
+
+    <section class="lang-row">
+      <select id="sourceLang" class="lang-select"></select>
+      <button id="swapLangBtn" class="swap-btn" title="Swap languages">⇄</button>
+      <select id="targetLang" class="lang-select"></select>
+    </section>
+
+    <section class="model-row">
+      <select id="modelSelect" class="model-select"></select>
+    </section>
+
+    <section class="input-row">
+      <textarea id="inputText" class="textbox" placeholder="Paste text to translate..."></textarea>
+    </section>
+
+    <section class="controls">
+      <button id="translateBtn" class="primary">Translate</button>
+      <span id="status" class="status"></span>
+    </section>
+
+    <section class="output-row">
+      <div id="outputHtml" class="output-html" aria-live="polite"></div>
+    </section>
+
+    <script src="sidepanel.js"></script>
+  </body>
+  </html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Translate Preferences</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="container">
+      <h1>AI Translate Preferences</h1>
+
+      <label class="field">
+        <span>Gemini API Key</span>
+        <input id="apiKey" type="password" placeholder="AIza..." />
+        <small>Get an API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.</small>
+      </label>
+
+      <div class="row">
+        <label class="field">
+          <span>Default source language</span>
+          <select id="sourceLang"></select>
+        </label>
+        <label class="field">
+          <span>Default target language</span>
+          <select id="targetLang"></select>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="saveBtn">Save</button>
+        <span id="status"></span>
+      </div>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
