@@ -115,6 +115,17 @@ html, body {
   line-height: 1.5;
 }
 
+/* contenteditable input styling */
+.contenteditable {
+  resize: vertical;
+  overflow: auto;
+}
+
+.contenteditable:empty:before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
 /* Output grows with content up to a cap; JS adjusts height */
 .output-text {
   max-height: 70vh;
@@ -153,4 +164,71 @@ html, body {
   border: 1px solid var(--border);
   border-radius: 8px;
   box-sizing: border-box;
+}
+
+/* History section */
+.history-section {
+  padding: 8px 16px 16px 16px;
+  border-top: 1px solid var(--border);
+}
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.history-title {
+  margin: 0;
+  font-size: 14px;
+}
+.history-actions button {
+  margin-left: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: #f9fafb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 40vh;
+  overflow: auto;
+}
+.history-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+}
+.history-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.history-actions-row {
+  display: flex;
+  gap: 8px;
+}
+.history-body {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.history-col {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 6px;
+  max-height: 160px;
+  overflow: auto;
+}
+.history-col h3 {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  color: var(--muted);
 }

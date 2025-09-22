@@ -23,16 +23,27 @@
     </section>
 
     <section class="input-row">
-      <textarea id="inputText" class="textbox" placeholder="Paste text to translate..."></textarea>
+      <div id="inputHtml" class="textbox contenteditable" contenteditable="true" data-placeholder="Paste text to translate..."></div>
     </section>
 
     <section class="controls">
       <button id="translateBtn" class="primary">Translate</button>
-      <span id="status" class="status"></span>
+git      <span id="status" class="status"></span>
     </section>
 
     <section class="output-row">
       <div id="outputHtml" class="output-html" aria-live="polite"></div>
+    </section>
+
+    <section class="history-section">
+      <div class="history-header">
+        <h2 class="history-title">History</h2>
+        <div class="history-actions">
+          <button id="refreshHistoryBtn" title="Refresh history">Refresh</button>
+          <button id="clearHistoryBtn" title="Clear history">Clear</button>
+        </div>
+      </div>
+      <div id="historyList" class="history-list" aria-live="polite"></div>
     </section>
 
     <script src="sidepanel.js"></script>

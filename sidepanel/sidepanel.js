@@ -2,12 +2,15 @@
 
 const sourceSelect = document.getElementById('sourceLang');
 const targetSelect = document.getElementById('targetLang');
-const inputText = document.getElementById('inputText');
+const inputEl = document.getElementById('inputHtml');
 const outputEl = document.getElementById('outputHtml');
 const translateBtn = document.getElementById('translateBtn');
 const swapBtn = document.getElementById('swapLangBtn');
 const statusEl = document.getElementById('status');
 const modelSelect = document.getElementById('modelSelect');
+const historyListEl = document.getElementById('historyList');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
 
 const LANGS = [
   { code: 'auto', name: 'Detect language' },
@@ -30,6 +33,129 @@ function populateLanguageSelect(select, defaultCode) {
     opt.textContent = lang.name;
     if (lang.code === defaultCode) opt.selected = true;
     select.appendChild(opt);
+  }
+}
+
+// --- Translation history (store last 10) ---
+const HISTORY_KEY = 'translationHistory';
+const HISTORY_LIMIT = 10;
+
+async function saveTranslationHistoryEntry(entry) {
+  try {
+    const { [HISTORY_KEY]: existing } = await chrome.storage.local.get({ [HISTORY_KEY]: [] });
+    const list = Array.isArray(existing) ? existing : [];
+    const updated = [entry, ...list].slice(0, HISTORY_LIMIT);
+    await chrome.storage.local.set({ [HISTORY_KEY]: updated });
+  } catch (e) {
+    // Ignore history save errors to not disrupt UX
+  }
+}
+
+async function getTranslationHistory() {
+  try {
+    const { [HISTORY_KEY]: existing } = await chrome.storage.local.get({ [HISTORY_KEY]: [] });
+    return Array.isArray(existing) ? existing : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+async function clearTranslationHistory() {
+  await chrome.storage.local.set({ [HISTORY_KEY]: [] });
+}
+
+// Per-item deletion and action buttons removed per request
+
+function formatLang(code) {
+  const found = LANGS.find(l => l.code === code);
+  return found ? found.name : code;
+}
+
+async function renderHistory() {
+  if (!historyListEl) return;
+  const items = await getTranslationHistory();
+  historyListEl.innerHTML = '';
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'history-empty';
+    empty.textContent = 'No history yet.';
+    historyListEl.appendChild(empty);
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  items.forEach((entry, idx) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'history-item';
+
+    const meta = document.createElement('div');
+    meta.className = 'history-meta';
+    const left = document.createElement('div');
+    const ts = new Date(entry.timestamp || Date.now());
+    left.textContent = `${ts.toLocaleString()} · ${formatLang(entry.sourceLang || 'auto')} → ${formatLang(entry.targetLang || '')} · ${entry.model || ''}`;
+    meta.appendChild(left);
+
+    const body = document.createElement('div');
+    body.className = 'history-body';
+    const colIn = document.createElement('div');
+    colIn.className = 'history-col';
+    const inTitle = document.createElement('h3');
+    inTitle.textContent = 'Input';
+    const inContent = document.createElement('div');
+    inContent.innerHTML = sanitizeHtml(entry.inputHtml || '');
+    colIn.appendChild(inTitle);
+    colIn.appendChild(inContent);
+
+    const colOut = document.createElement('div');
+    colOut.className = 'history-col';
+    const outTitle = document.createElement('h3');
+    outTitle.textContent = 'Output';
+    const outContent = document.createElement('div');
+    outContent.innerHTML = sanitizeHtml(entry.outputHtml || '');
+    colOut.appendChild(outTitle);
+    colOut.appendChild(outContent);
+
+    body.appendChild(colIn);
+    body.appendChild(colOut);
+
+    wrapper.appendChild(meta);
+    wrapper.appendChild(body);
+    frag.appendChild(wrapper);
+  });
+  historyListEl.appendChild(frag);
+}
+
+async function copyHtmlString(html) {
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      const blobHtml = new Blob([html || ''], { type: 'text/html' });
+      const blobText = new Blob([String(html || '').replace(/<[^>]*>/g, '')], { type: 'text/plain' });
+      const item = new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText });
+      await navigator.clipboard.write([item]);
+      setStatus('Copied');
+      setTimeout(() => setStatus(''), 800);
+      return;
+    }
+  } catch (e) {
+    // Fallback below
+  }
+  const temp = document.createElement('div');
+  temp.style.position = 'fixed';
+  temp.style.left = '-9999px';
+  temp.style.whiteSpace = 'pre-wrap';
+  temp.innerHTML = html || '';
+  document.body.appendChild(temp);
+  const range = document.createRange();
+  range.selectNodeContents(temp);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  try {
+    document.execCommand('copy');
+    setStatus('Copied');
+    setTimeout(() => setStatus(''), 800);
+  } finally {
+    sel.removeAllRanges();
+    document.body.removeChild(temp);
   }
 }
 
@@ -76,6 +202,186 @@ targetSelect.addEventListener('change', savePreferences);
 modelSelect.addEventListener('change', savePreferences);
 
 function setStatus(text) { statusEl.textContent = text; }
+
+async function copyElementHtml(el) {
+  if (!el) return;
+  const html = el.innerHTML || '';
+  const text = el.innerText || '';
+  if (!html && !text) return;
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      const blobHtml = new Blob([html], { type: 'text/html' });
+      const blobText = new Blob([text], { type: 'text/plain' });
+      const item = new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText });
+      await navigator.clipboard.write([item]);
+      setStatus('Copied');
+      setTimeout(() => setStatus(''), 1000);
+      return;
+    }
+  } catch (e) {
+    // Fallback below
+  }
+  // Fallback: execCommand('copy') on a temp element
+  const temp = document.createElement('div');
+  temp.style.position = 'fixed';
+  temp.style.left = '-9999px';
+  temp.style.whiteSpace = 'pre-wrap';
+  temp.innerHTML = html || text;
+  document.body.appendChild(temp);
+  const range = document.createRange();
+  range.selectNodeContents(temp);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  try {
+    document.execCommand('copy');
+    setStatus('Copied');
+    setTimeout(() => setStatus(''), 1000);
+  } finally {
+    sel.removeAllRanges();
+    document.body.removeChild(temp);
+  }
+}
+
+// --- HTML-preserving translation helpers ---
+function buildPromptFromHtml(html, source, target) {
+  const sourceInfo = source === 'auto'
+    ? 'Detect the source language from the entire HTML fragment.'
+    : `The source language is ${source}.`;
+  return `${sourceInfo}\nYou will be given an HTML fragment. Translate ONLY human-visible text nodes into ${target}, while preserving the original HTML structure and all tags and attributes.\nStrict rules:\n- Do not add, remove, or reorder HTML tags.\n- Keep attributes (including classes and ids) unchanged.\n- Preserve inline formatting (e.g., <strong>, <em>, <code>, <a>, lists, headings, line breaks).\n- Keep URLs and code content unchanged unless they contain human language to translate.\n- Return ONLY the translated HTML fragment, no explanations, no code fences.\nHTML:\n${html}`;
+}
+
+async function translateHtmlWithGemini(html, source, target, modelId) {
+  const apiKey = await getApiKey();
+  if (!apiKey) {
+    throw new Error('Missing Gemini API key. Open Preferences to set it.');
+  }
+
+  const modelPath = `models/${modelId}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const prompt = buildPromptFromHtml(html, source, target);
+
+  const body = {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: prompt }]
+      }
+    ]
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini error: ${res.status} ${errText}`);
+  }
+  const data = await res.json();
+  const first = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!first) throw new Error('No translation returned');
+  return first.trim();
+}
+
+function sanitizeHtml(html) {
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  const allowedTags = new Set(['DIV','P','SPAN','BR','STRONG','B','EM','I','U','CODE','PRE','UL','OL','LI','H1','H2','H3','H4','H5','H6','A','BLOCKQUOTE']);
+  const allowedAttrsForA = new Set(['href','title','rel','target']);
+
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT, null);
+  const toRemove = [];
+  while (walker.nextNode()) {
+    const el = walker.currentNode;
+    if (!allowedTags.has(el.tagName)) {
+      // unwrap disallowed element: move its children up
+      const parent = el.parentNode;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      toRemove.push(el);
+      continue;
+    }
+    // remove dangerous attributes
+    for (const attr of Array.from(el.attributes)) {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on')) { el.removeAttribute(attr.name); continue; }
+      if (el.tagName === 'A') {
+        if (!allowedAttrsForA.has(attr.name)) el.removeAttribute(attr.name);
+      } else {
+        // drop all attributes except dir and lang for non-links
+        if (name !== 'dir' && name !== 'lang') el.removeAttribute(attr.name);
+      }
+    }
+    if (el.tagName === 'A') {
+      const href = el.getAttribute('href') || '';
+      // prevent javascript: URLs
+      if (/^\s*javascript:/i.test(href)) el.removeAttribute('href');
+      el.setAttribute('target', '_blank');
+      el.setAttribute('rel', 'noreferrer noopener');
+    }
+  }
+  for (const n of toRemove) n.parentNode.removeChild(n);
+  return template.innerHTML;
+}
+
+// --- Exact-structure translation: replace only text nodes ---
+function collectTextNodes(root) {
+  const nodes = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+      // Skip pure whitespace
+      if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      // Skip inside elements that should not be translated
+      const parentTag = node.parentElement?.tagName || '';
+      if (parentTag === 'CODE' || parentTag === 'PRE' || parentTag === 'SCRIPT' || parentTag === 'STYLE') {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  return nodes;
+}
+
+function buildChunksPrompt(texts, source, target) {
+  const sourceInfo = source === 'auto'
+    ? 'Detect the source language from the entire set.'
+    : `The source language is ${source}.`;
+  const inputJson = JSON.stringify(texts);
+  return `${sourceInfo}\nTranslate each array item into ${target}. Return ONLY a valid JSON array of strings (same length, same order).\nRules:\n- Translate only human language; keep numbers, URLs, code, and emojis unchanged.\n- Do not add or remove items.\n- Do not add quotes, backticks, or explanations.\nInput: ${inputJson}`;
+}
+
+async function translateTextChunksWithGemini(texts, source, target, modelId) {
+  const apiKey = await getApiKey();
+  if (!apiKey) throw new Error('Missing Gemini API key. Open Preferences to set it.');
+  const modelPath = `models/${modelId}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const prompt = buildChunksPrompt(texts, source, target);
+  const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini error: ${res.status} ${errText}`);
+  }
+  const data = await res.json();
+  const first = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!first) throw new Error('No translation returned');
+  // Expecting a JSON array
+  let arr;
+  try {
+    arr = JSON.parse(first);
+  } catch (e) {
+    // Attempt to extract JSON between brackets
+    const m = first.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error('Unexpected response format');
+    arr = JSON.parse(m[0]);
+  }
+  if (!Array.isArray(arr) || arr.length !== texts.length) throw new Error('Mismatched translation array length');
+  return arr.map(s => (typeof s === 'string' ? s : String(s)));
+}
 
 // Basic, safe Markdown renderer (headings, bold/italic, lists, code, links)
 function escapeHtml(str) {
@@ -231,14 +537,42 @@ async function translateWithGemini(text, source, target, modelId) {
 }
 
 translateBtn.addEventListener('click', async () => {
-  const text = inputText.value.trim();
-  if (!text) return;
+  const hasText = (inputEl?.innerText || '').trim();
+  if (!hasText) return;
+  const inputHtml = (inputEl?.innerHTML || '').trim();
+  const htmlToTranslate = inputHtml || `<p>${hasText}</p>`;
   setStatus('Translating...');
   if (outputEl) outputEl.innerHTML = '';
   translateBtn.disabled = true;
   try {
-    const translation = await translateWithGemini(text, sourceSelect.value, targetSelect.value, modelSelect.value);
-    if (outputEl) outputEl.innerHTML = renderMarkdown(translation);
+    // Try exact-structure translation first
+    const template = document.createElement('template');
+    template.innerHTML = htmlToTranslate;
+    const textNodes = collectTextNodes(template.content);
+    const texts = textNodes.map(n => n.nodeValue);
+    let outputHtml = '';
+    if (texts.length > 0) {
+      const translated = await translateTextChunksWithGemini(texts, sourceSelect.value, targetSelect.value, modelSelect.value);
+      translated.forEach((t, i) => { textNodes[i].nodeValue = t; });
+      outputHtml = sanitizeHtml(template.innerHTML);
+      if (outputEl) outputEl.innerHTML = outputHtml;
+    } else {
+      // Fallback to HTML translation if no text nodes found
+      const translatedHtml = await translateHtmlWithGemini(htmlToTranslate, sourceSelect.value, targetSelect.value, modelSelect.value);
+      outputHtml = sanitizeHtml(translatedHtml);
+      if (outputEl) outputEl.innerHTML = outputHtml;
+    }
+    // Save history (keep latest 10)
+    await saveTranslationHistoryEntry({
+      timestamp: Date.now(),
+      sourceLang: sourceSelect.value,
+      targetLang: targetSelect.value,
+      model: modelSelect.value,
+      inputHtml: htmlToTranslate,
+      outputHtml
+    });
+    // Refresh history UI
+    renderHistory();
     setStatus('');
   } catch (e) {
     setStatus(String(e.message || e));
@@ -247,4 +581,17 @@ translateBtn.addEventListener('click', async () => {
   }
 });
 
+if (clearHistoryBtn) {
+  clearHistoryBtn.addEventListener('click', async () => {
+    await clearTranslationHistory();
+    await renderHistory();
+    setStatus('Cleared');
+    setTimeout(() => setStatus(''), 800);
+  });
+}
+if (refreshHistoryBtn) {
+  refreshHistoryBtn.addEventListener('click', () => renderHistory());
+}
+
 loadPreferences();
+renderHistory();
