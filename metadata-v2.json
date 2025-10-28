@@ -1,0 +1,15 @@
+{
+  "name": "Devlord",
+  "symbol": "DEVLORD",
+  "description": "The power of developers, forged on Solana.",
+  "image": "https://example.com/devlord.png",
+  "attributes": [
+    {
+      "trait_type": "Origin",
+      "value": "Vietnam"
+    }
+  ],
+  "extensions": {
+    "website": "https://proxy.devlord.net"
+  }
+}
