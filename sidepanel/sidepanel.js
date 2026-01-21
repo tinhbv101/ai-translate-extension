@@ -11,6 +11,7 @@ const modelSelect = document.getElementById('modelSelect');
 const historyListEl = document.getElementById('historyList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+const extensionToggle = document.getElementById('extensionToggle');
 
 const LANGS = [
   { code: 'auto', name: 'Detect language' },
@@ -593,5 +594,26 @@ if (refreshHistoryBtn) {
   refreshHistoryBtn.addEventListener('click', () => renderHistory());
 }
 
+async function loadExtensionState() {
+  const { extensionEnabled } = await chrome.storage.sync.get({ extensionEnabled: true });
+  if (extensionToggle) {
+    extensionToggle.checked = extensionEnabled !== false;
+  }
+}
+
+async function saveExtensionState(enabled) {
+  await chrome.storage.sync.set({ extensionEnabled: enabled });
+}
+
+if (extensionToggle) {
+  extensionToggle.addEventListener('change', async (e) => {
+    const enabled = e.target.checked;
+    await saveExtensionState(enabled);
+    setStatus(enabled ? 'Extension enabled' : 'Extension disabled');
+    setTimeout(() => setStatus(''), 1200);
+  });
+}
+
 loadPreferences();
+loadExtensionState();
 renderHistory();
